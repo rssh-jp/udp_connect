@@ -13,30 +13,62 @@ func (c *Connect)Close(){
     }
     c.conn.Close()
 }
-func (c *Connect)Read(cb func(data []byte))error{
+func (c *Connect)Read(cb func([]byte, error)){
     buf := make([]byte, 255)
-    for{
-        n, err := c.conn.Read(buf)
-        if err != nil{
-            return
+    go func(){
+        for{
+            n, addr, err := c.conn.ReadFrom(buf)
+            if err != nil{
+                cb(nil, err)
+                return
+            }
+            go func(data []byte){
+                cb(data, nil)
+            }(buf[:n])
         }
-        cb(buf)
+    }()
+    return
+}
+func (c *Connect)Disconnect(){
+    if c.conn == nil{
+        return
     }
+    c.conn.Close()
+}
+func (c *Connect)Send(address string, data []byte)error{
+    udpaddr, err := net.ResolveUDPAddr("udp", address)
+    if err != nil{
+        return err
+    }
+
+    conn, err := net.DialUDP("udp", nil, udpaddr)
+    if err != nil{
+        return err
+    }
+
+    conn.Write(data)
+
     return nil
 }
 
-func Create(addr string)(*net.UDPConn, error){
+func Create(addr string)(*Connect, error){
     raddr, err := net.ResolveUDPAddr("udp", addr)
     if err != nil{
         fmt.Println(err)
-        return, nil, err
+        return nil, err
     }
 
-    conn, err := net.DialUDP("udp", nil, raddr)
+    conn, err := net.ListenUDP("udp", raddr)
     if err != nil{
         fmt.Println(err)
-        return, nil, err
+        return nil, err
     }
 
+    ret := Connect{
+        conn : conn,
+    }
+    fmt.Println(conn)
+
+    return &ret, nil
 }
 

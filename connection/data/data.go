@@ -1,6 +1,5 @@
 package data
 import(
-    "fmt"
 )
 
 func Serialize(data []byte)[]byte{

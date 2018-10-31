@@ -2,8 +2,29 @@ package main
 import(
     "fmt"
     "net"
+    "github.com/rssh-jp/udp_connect/connection"
+    "github.com/rssh-jp/udp_connect/connection/protocol"
+    "github.com/rssh-jp/udp_connect/connection/data"
 )
 func main(){
+    conn, err := connection.Create("")
+    if err != nil{
+        fmt.Println(err)
+        return
+    }
+
+    sendData, err := protocol.SerializeMessage("aaaaa")
+    if err != nil{
+        fmt.Println(err)
+        return
+    }
+
+    conn.Send("localhost:5454", data.Serialize(sendData))
+
+    ch := make(chan struct{}, 1)
+    <-ch
+}
+func nice(){
     udpaddr, err := net.ResolveUDPAddr("udp", "localhost:5454")
     if err != nil{
         fmt.Println(err)

@@ -2,7 +2,7 @@ package protocol
 import(
     "encoding/json"
 
-    "udp_conn/convert"
+    "github.com/rssh-jp/udp_connect/convert"
 )
 
 type protocol struct{

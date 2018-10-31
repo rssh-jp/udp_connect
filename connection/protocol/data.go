@@ -4,10 +4,11 @@ import(
     "encoding/json"
 )
 
-type SysConnect struct
+type Connect struct{
+}
 
-func DeserializeSysConnect(data []byte)(SysConnect, error){
-    var ret SysConnect 
+func DeserializeConnect(data []byte)(Connect, error){
+    var ret Connect 
     err := json.Unmarshal(data, &ret)
     if err != nil{
         return ret, err
@@ -15,22 +16,18 @@ func DeserializeSysConnect(data []byte)(SysConnect, error){
     return ret, nil
 }
 
-func SerializeSysConnect()([]byte, error){
-    data := SysConnect{
+func SerializeConnect()([]byte, error){
+    data := Connect{
     }
     return serialize(data)
 }
 
-type User struct{
-    Name string `json:"name"`
+type AccessPoint struct{
+    Address string  `json:"address"`
 }
 
-type SysAccessPoint struct{
-    AccessPoint string  `json:"access_point"`
-}
-
-func DeserializeSysAccessPoint(data []byte)(SysAccessPoint, error){
-    var ret SysAccessPoint 
+func DeserializeAccessPoint(data []byte)(AccessPoint, error){
+    var ret AccessPoint 
     err := json.Unmarshal(data, &ret)
     if err != nil{
         return ret, err
@@ -38,9 +35,9 @@ func DeserializeSysAccessPoint(data []byte)(SysAccessPoint, error){
     return ret, nil
 }
 
-func SerializeSysAccessPoint(accessPoint string)([]byte, error){
-    data := SysAccessPoint{
-        AccessPoint : accessPoint,
+func SerializeAccessPoint(address string)([]byte, error){
+    data := AccessPoint{
+        Address : address,
     }
     return serialize(data)
 }
