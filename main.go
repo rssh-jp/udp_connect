@@ -48,7 +48,7 @@ func nice(){
     }
 }
 func exec(){
-    wk, err := connection.Create(":5454")
+    wk, err := connection.CreateReceiver(":5454")
     if err != nil{
         fmt.Println(err)
         return
