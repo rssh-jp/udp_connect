@@ -1,11 +1,18 @@
 package data
-import(
+
+import (
+	"github.com/rssh-jp/udp_connect/connection/data/crypto"
 )
 
-func Serialize(data []byte)[]byte{
-    return data
-}
-func Deserialize(data []byte)[]byte{
-    return data
-}
+var (
+	key = []byte("テスト")
+)
 
+func Serialize(data []byte) []byte {
+	crypto.Cryption(&data, key)
+	return data
+}
+func Deserialize(data []byte) []byte {
+	crypto.Decryption(&data, key)
+	return data
+}
