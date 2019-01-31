@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
+	"net"
+
 	"github.com/rssh-jp/udp_connect/connection"
 	"github.com/rssh-jp/udp_connect/connection/data"
 	"github.com/rssh-jp/udp_connect/connection/protocol"
-	"net"
 )
 
 func main() {
@@ -15,17 +16,46 @@ func main() {
 		return
 	}
 
-	sendData, err := protocol.SerializeMessage("aaaaa")
+	//sendData, err := protocol.SerializeMessage("aaaaa")
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return
+	//}
+
+	//conn.Send(data.Serialize(sendData))
+
+    //for i:=0; i<2; i++{
+    //    message := fmt.Sprintf("aaaaa : %d", i)
+    //    send(conn, message)
+
+	//    //sendData, err := protocol.SerializeMessage(message)
+	//    //if err != nil {
+	//    //	fmt.Println(err)
+	//    //	return
+	//    //}
+
+    //    //fmt.Println(string(sendData))
+	//    //conn.Send(data.Serialize(sendData))
+    //}
+    send(conn, "aaaaaaaaaa")
+    send(conn, "bbbbbbbbbb")
+
+	ch := make(chan struct{}, 1)
+	<-ch
+}
+
+func send(conn *connection.Connect, message string){
+	sendData, err := protocol.SerializeMessage(message)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
+    fmt.Println(sendData)
+    fmt.Println(string(sendData))
 	conn.Send(data.Serialize(sendData))
-
-	ch := make(chan struct{}, 1)
-	<-ch
 }
+
 func nice() {
 	udpaddr, err := net.ResolveUDPAddr("udp", "localhost:5454")
 	if err != nil {

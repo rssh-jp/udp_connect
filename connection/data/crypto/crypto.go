@@ -12,16 +12,20 @@ func addByte(a, b uint8) byte {
 	return work
 }
 
-func Cryption(src *[]byte, key []byte) {
-	for index, val := range *src {
+func Cryption(src, key []byte) []byte{
+    ret := make([]byte, 0, len(src))
+	for index, val := range src {
 		keyIndex := index % len(key)
-		(*src)[index] = addByte(val, key[keyIndex])
+        ret = append(ret, addByte(val, key[keyIndex]))
 	}
+    return ret
 }
 
-func Decryption(src *[]byte, key []byte) {
-	for index, val := range *src {
+func Decryption(src, key []byte) []byte{
+    ret := make([]byte, 0, len(src))
+	for index, val := range src {
 		keyIndex := index % len(key)
-		(*src)[index] = addByte(val, -key[keyIndex])
+        ret = append(ret, addByte(val, -key[keyIndex]))
 	}
+    return ret
 }

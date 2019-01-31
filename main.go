@@ -17,19 +17,24 @@ func exec() {
 	defer wk.Disconnect()
 
 	wk.Read(func(src []byte, err error) {
+        fmt.Println("+++ 1")
 		if err != nil {
 			wk.Disconnect()
 			return
 		}
+        fmt.Println(src)
 		obj, err := protocol.Deserialize(data.Deserialize(src))
-		fmt.Println(obj, err)
+        fmt.Println("+++ 2")
+		fmt.Printf("%+v, %v\n", obj, err)
 		if err != nil {
+            fmt.Println("### ", err)
 			wk.Disconnect()
 			return
 		}
 		fmt.Println(obj)
 
 		fmt.Println("-------------", string(src))
+        fmt.Println("+++ 3")
 	})
 
 	ch := make(chan struct{}, 1)

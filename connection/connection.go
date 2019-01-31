@@ -16,16 +16,18 @@ func (c *Connect) Close() {
 	c.conn.Close()
 }
 func (c *Connect) Read(cb func([]byte, error)) {
-	buf := make([]byte, 255)
 	go func() {
 		for {
+	        buf := make([]byte, 255)
 			n, addr, err := c.conn.ReadFrom(buf)
-			fmt.Println(addr)
+			fmt.Println("addr : ", addr)
 			if err != nil {
 				cb(nil, err)
 				return
 			}
+            fmt.Println("        1 connection.Read    : ", buf[:n])
 			go func(data []byte) {
+                fmt.Println("        2 connection.Read cb : ", data)
 				cb(data, nil)
 			}(buf[:n])
 		}
@@ -39,6 +41,7 @@ func (c *Connect) Disconnect() {
 	c.conn.Close()
 }
 func (c *Connect) Send(data []byte) error {
+    fmt.Println("write word : ", data)
 	c.conn.Write(data)
 
 	return nil

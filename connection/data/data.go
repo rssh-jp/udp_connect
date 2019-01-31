@@ -9,10 +9,8 @@ var (
 )
 
 func Serialize(data []byte) []byte {
-	crypto.Cryption(&data, key)
-	return data
+	return crypto.Cryption(data, key)
 }
 func Deserialize(data []byte) []byte {
-	crypto.Decryption(&data, key)
-	return data
+	return crypto.Decryption(data, key)
 }
