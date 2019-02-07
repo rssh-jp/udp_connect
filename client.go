@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"net"
 
+	"github.com/rssh-jp/udp_connect/app"
 	"github.com/rssh-jp/udp_connect/connection"
 	"github.com/rssh-jp/udp_connect/connection/data"
 	"github.com/rssh-jp/udp_connect/connection/protocol"
@@ -16,87 +16,65 @@ func main() {
 		return
 	}
 
-	//sendData, err := protocol.SerializeMessage("aaaaa")
-	//if err != nil {
-	//	fmt.Println(err)
-	//	return
-	//}
+	for i := 0; i < 10; i++ {
+		message := fmt.Sprintf("aaaaa : %d", i)
+		app.SendMessage(conn, message)
+	}
 
-	//conn.Send(data.Serialize(sendData))
+	app.SendUser(conn, "KKKKKKKKKKKKKKKKKKK")
+	app.SendConnect(conn)
+	app.SendAccessPoint(conn, "bbbbbbbbbbbbbbb")
 
-    //for i:=0; i<2; i++{
-    //    message := fmt.Sprintf("aaaaa : %d", i)
-    //    send(conn, message)
+	addr := conn.LocalAddr()
 
-	//    //sendData, err := protocol.SerializeMessage(message)
-	//    //if err != nil {
-	//    //	fmt.Println(err)
-	//    //	return
-	//    //}
+	conn.Close()
 
-    //    //fmt.Println(string(sendData))
-	//    //conn.Send(data.Serialize(sendData))
-    //}
-    send(conn, "aaaaaaaaaa")
-    send(conn, "bbbbbbbbbb")
+	app.SendMessage2(addr, ":5454", "new message")
 
 	ch := make(chan struct{}, 1)
 	<-ch
 }
 
-func send(conn *connection.Connect, message string){
+func sendMessage(conn *connection.Connect, message string) {
 	sendData, err := protocol.SerializeMessage(message)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-    fmt.Println(sendData)
-    fmt.Println(string(sendData))
-	conn.Send(data.Serialize(sendData))
+	fmt.Println(string(sendData))
+	conn.Send(data.Serialize(sendData, conn.LocalAddr()))
 }
 
-func nice() {
-	udpaddr, err := net.ResolveUDPAddr("udp", "localhost:5454")
+func sendUser(conn *connection.Connect, user string) {
+	sendData, err := protocol.SerializeUser(user)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	//laddr, err := net.ResolveUDPAddr("udp", "localhost:5455")
-	//if err != nil{
-	//    fmt.Println(err)
-	//    return
-	//}
+	fmt.Println(string(sendData))
+	conn.Send(data.Serialize(sendData, conn.LocalAddr()))
+}
 
-	conn, err := net.DialUDP("udp", nil, udpaddr)
+func sendConnect(conn *connection.Connect) {
+	sendData, err := protocol.SerializeConnect()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	defer conn.Close()
 
-	fmt.Println("Create connection")
+	fmt.Println(string(sendData))
+	conn.Send(data.Serialize(sendData, conn.LocalAddr()))
+}
 
-	conn.Write([]byte("data"))
-	buf := make([]byte, 255, 255)
-
-	// 最初の読み込みではアクセス先を取得
-	//buf := make([]byte, 255)
-	//n, err := conn.Read(buf)
-	//if err != nil{
-	//    fmt.Println(err)
-	//    return
-	//}
-
-	for {
-		n, err := conn.Read(buf)
-		fmt.Println(n, err)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		fmt.Println(string(buf[:n]))
+func sendAccessPoint(conn *connection.Connect, accessPoint string) {
+	sendData, err := protocol.SerializeAccessPoint(accessPoint)
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
+
+	fmt.Println(string(sendData))
+	conn.Send(data.Serialize(sendData, conn.LocalAddr()))
 }

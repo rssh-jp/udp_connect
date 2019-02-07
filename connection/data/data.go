@@ -4,13 +4,9 @@ import (
 	"github.com/rssh-jp/udp_connect/connection/data/crypto"
 )
 
-var (
-	key = []byte("テスト")
-)
-
-func Serialize(data []byte) []byte {
-	return crypto.Cryption(data, key)
+func Serialize(data []byte, key string) []byte {
+	return crypto.Cryption(data, []byte(key))
 }
-func Deserialize(data []byte) []byte {
-	return crypto.Decryption(data, key)
+func Deserialize(data []byte, key string) []byte {
+	return crypto.Decryption(data, []byte(key))
 }

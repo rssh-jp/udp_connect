@@ -15,20 +15,17 @@ func (c *Connect) Close() {
 	}
 	c.conn.Close()
 }
-func (c *Connect) Read(cb func([]byte, error)) {
+func (c *Connect) Read(cb func([]byte, string, error)) {
 	go func() {
 		for {
-	        buf := make([]byte, 255)
+			buf := make([]byte, 255)
 			n, addr, err := c.conn.ReadFrom(buf)
-			fmt.Println("addr : ", addr)
 			if err != nil {
-				cb(nil, err)
+				cb(nil, "", err)
 				return
 			}
-            fmt.Println("        1 connection.Read    : ", buf[:n])
 			go func(data []byte) {
-                fmt.Println("        2 connection.Read cb : ", data)
-				cb(data, nil)
+				cb(data, addr.String(), nil)
 			}(buf[:n])
 		}
 	}()
@@ -41,10 +38,12 @@ func (c *Connect) Disconnect() {
 	c.conn.Close()
 }
 func (c *Connect) Send(data []byte) error {
-    fmt.Println("write word : ", data)
 	c.conn.Write(data)
 
 	return nil
+}
+func (c *Connect) LocalAddr() string {
+	return c.conn.LocalAddr().String()
 }
 
 func Create(localAddr, remoteAddr string) (*Connect, error) {
@@ -99,7 +98,6 @@ func CreateReceiver(localAddr string) (*Connect, error) {
 	ret := Connect{
 		conn: conn,
 	}
-	fmt.Println(conn)
 
 	return &ret, nil
 }

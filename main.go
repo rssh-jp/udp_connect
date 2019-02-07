@@ -16,39 +16,33 @@ func exec() {
 	}
 	defer wk.Disconnect()
 
-	wk.Read(func(src []byte, err error) {
-        fmt.Println("+++ 1")
+	wk.Read(func(src []byte, addr string, err error) {
 		if err != nil {
 			wk.Disconnect()
 			return
 		}
-        fmt.Println(src)
-		obj, err := protocol.Deserialize(data.Deserialize(src))
-        fmt.Println("+++ 2")
-		fmt.Printf("%+v, %v\n", obj, err)
+		typ, obj, err := protocol.Deserialize(data.Deserialize(src, addr))
 		if err != nil {
-            fmt.Println("### ", err)
 			wk.Disconnect()
 			return
+		}
+
+		switch typ {
+		case protocol.SysConnect:
+			fmt.Println("connect")
+		case protocol.SysAccessPoint:
+			fmt.Println("ACCESS!!")
+		case protocol.AppUser:
+		case protocol.AppMessage:
 		}
 		fmt.Println(obj)
-
-		fmt.Println("-------------", string(src))
-        fmt.Println("+++ 3")
 	})
 
+	fmt.Println("Start")
 	ch := make(chan struct{}, 1)
 
 	<-ch
 }
 func main() {
-
-	data, err := protocol.SerializeUser("nice")
-	data2, err := protocol.Deserialize(data)
-	//protocol.Deserialize([]byte(`{"protocol":1,"data":{"name":"aaaa","test":{"test2":10,"test3":"test3","test4":[11,12],"test5":[{"test6":13},{"test6":14}]}}}`))
-
-	fmt.Println(data, err)
-	fmt.Printf("%+v\n", data2)
-
 	exec()
 }
