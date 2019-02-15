@@ -6,54 +6,49 @@ import (
 	"github.com/rssh-jp/udp_connect/connection/protocol"
 )
 
-func SendMessage2(localAddr, remoteAddr string, message string) error {
-	conn, err := connection.Create(localAddr, remoteAddr)
+func send(remoteAddr string, sendData []byte) (string, error) {
+	conn, err := connection.Create("", remoteAddr)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	defer conn.Close()
 
-	sendData, err := protocol.SerializeMessage(message)
-	if err != nil {
-		return err
-	}
-
-	return conn.Send(data.Serialize(sendData, conn.LocalAddr()))
+	return conn.LocalAddr(), conn.Send(data.Serialize(sendData, conn.LocalAddr()))
 }
 
-func SendMessage(conn *connection.Connect, message string) error {
+func SendMessage(remoteAddr string, message string) (string, error) {
 	sendData, err := protocol.SerializeMessage(message)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return conn.Send(data.Serialize(sendData, conn.LocalAddr()))
+	return send(remoteAddr, sendData)
 }
 
-func SendUser(conn *connection.Connect, user string) error {
+func SendUser(remoteAddr string, user string) (string, error) {
 	sendData, err := protocol.SerializeUser(user)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return conn.Send(data.Serialize(sendData, conn.LocalAddr()))
+	return send(remoteAddr, sendData)
 }
 
-func SendConnect(conn *connection.Connect) error {
+func SendConnect(remoteAddr string) (string, error) {
 	sendData, err := protocol.SerializeConnect()
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return conn.Send(data.Serialize(sendData, conn.LocalAddr()))
+	return send(remoteAddr, sendData)
 }
 
-func SendAccessPoint(conn *connection.Connect, accessPoint string) error {
+func SendAccessPoint(remoteAddr string, accessPoint string) (string, error) {
 	sendData, err := protocol.SerializeAccessPoint(accessPoint)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return conn.Send(data.Serialize(sendData, conn.LocalAddr()))
+	return send(remoteAddr, sendData)
 }

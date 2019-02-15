@@ -9,72 +9,50 @@ import (
 	"github.com/rssh-jp/udp_connect/connection/protocol"
 )
 
-func main() {
-	conn, err := connection.Create("", ":5454")
+func receiver(localAddr string, chLocalAddr chan string, chClose chan error) {
+	recv, err := connection.CreateReceiver(localAddr)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+	//defer recv.Disconnect()
 
-	for i := 0; i < 10; i++ {
-		message := fmt.Sprintf("aaaaa : %d", i)
-		app.SendMessage(conn, message)
-	}
+	chLocalAddr <- recv.LocalAddr()
 
-	app.SendUser(conn, "KKKKKKKKKKKKKKKKKKK")
-	app.SendConnect(conn)
-	app.SendAccessPoint(conn, "bbbbbbbbbbbbbbb")
+	recv.Read(func(src []byte, addr string, err error) {
+		if err != nil {
+			recv.Disconnect()
+			return
+		}
+		typ, obj, err := protocol.Deserialize(data.Deserialize(src, addr))
+		if err != nil {
+			recv.Disconnect()
+			return
+		}
 
-	addr := conn.LocalAddr()
-
-	conn.Close()
-
-	app.SendMessage2(addr, ":5454", "new message")
+		switch typ {
+		case protocol.SysConnect:
+			fmt.Println("connect")
+		case protocol.SysAccessPoint:
+			fmt.Println("ACCESS!!")
+		case protocol.AppUser:
+		case protocol.AppMessage:
+		}
+		fmt.Println(obj)
+	})
 
 	ch := make(chan struct{}, 1)
 	<-ch
 }
 
-func sendMessage(conn *connection.Connect, message string) {
-	sendData, err := protocol.SerializeMessage(message)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+func main() {
+	chLocalAddr := make(chan string, 1)
+	chClose := make(chan error, 1)
 
-	fmt.Println(string(sendData))
-	conn.Send(data.Serialize(sendData, conn.LocalAddr()))
-}
+	go receiver("", chLocalAddr, chClose)
 
-func sendUser(conn *connection.Connect, user string) {
-	sendData, err := protocol.SerializeUser(user)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	app.SendConnect(":5454")
 
-	fmt.Println(string(sendData))
-	conn.Send(data.Serialize(sendData, conn.LocalAddr()))
-}
-
-func sendConnect(conn *connection.Connect) {
-	sendData, err := protocol.SerializeConnect()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	fmt.Println(string(sendData))
-	conn.Send(data.Serialize(sendData, conn.LocalAddr()))
-}
-
-func sendAccessPoint(conn *connection.Connect, accessPoint string) {
-	sendData, err := protocol.SerializeAccessPoint(accessPoint)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	fmt.Println(string(sendData))
-	conn.Send(data.Serialize(sendData, conn.LocalAddr()))
+	ch := make(chan struct{}, 1)
+	<-ch
 }
