@@ -5,31 +5,36 @@ import (
 	"net"
 )
 
+type recvObject struct {
+	Data []byte
+	Addr string
+	Err  error
+}
 type Connect struct {
-	conn *net.UDPConn
+	conn   *net.UDPConn
+	chRecv chan recvObject
 }
 
 func (c *Connect) Close() {
+	close(c.chRecv)
 	if c.conn == nil {
 		return
 	}
 	c.conn.Close()
 }
-func (c *Connect) Read(cb func([]byte, string, error)) {
+func (c *Connect) Read() chan recvObject {
 	go func() {
 		for {
 			buf := make([]byte, 255)
 			n, addr, err := c.conn.ReadFrom(buf)
 			if err != nil {
-				cb(nil, "", err)
+				c.chRecv <- recvObject{nil, "", err}
 				return
 			}
-			go func(data []byte) {
-				cb(data, addr.String(), nil)
-			}(buf[:n])
+			c.chRecv <- recvObject{buf[:n], addr.String(), nil}
 		}
 	}()
-	return
+	return c.chRecv
 }
 func (c *Connect) Disconnect() {
 	if c.conn == nil {
@@ -75,7 +80,8 @@ func Create(localAddr, remoteAddr string) (*Connect, error) {
 	fmt.Println("===", conn.LocalAddr())
 
 	ret := Connect{
-		conn: conn,
+		conn:   conn,
+		chRecv: make(chan recvObject, 10),
 	}
 	fmt.Println(conn)
 
@@ -96,7 +102,8 @@ func CreateReceiver(localAddr string) (*Connect, error) {
 	}
 
 	ret := Connect{
-		conn: conn,
+		conn:   conn,
+		chRecv: make(chan recvObject, 10),
 	}
 
 	return &ret, nil

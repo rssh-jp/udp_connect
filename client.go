@@ -15,34 +15,36 @@ func receiver(localAddr string, chLocalAddr chan string, chClose chan error) {
 		fmt.Println(err)
 		return
 	}
-	//defer recv.Disconnect()
+	defer recv.Disconnect()
 
 	chLocalAddr <- recv.LocalAddr()
 
-	recv.Read(func(src []byte, addr string, err error) {
-		if err != nil {
-			recv.Disconnect()
-			return
-		}
-		typ, obj, err := protocol.Deserialize(data.Deserialize(src, addr))
-		if err != nil {
-			recv.Disconnect()
-			return
-		}
+	chRecv := recv.Read()
 
-		switch typ {
-		case protocol.SysConnect:
-			fmt.Println("connect")
-		case protocol.SysAccessPoint:
-			fmt.Println("ACCESS!!")
-		case protocol.AppUser:
-		case protocol.AppMessage:
-		}
-		fmt.Println(obj)
-	})
+	for {
+		select {
+		case res := <-chRecv:
+			if res.Err != nil {
+				recv.Disconnect()
+				return
+			}
+			typ, obj, err := protocol.Deserialize(data.Deserialize(res.Data, res.Addr))
+			if err != nil {
+				recv.Disconnect()
+				return
+			}
 
-	ch := make(chan struct{}, 1)
-	<-ch
+			switch typ {
+			case protocol.SysConnect:
+				fmt.Println("connect")
+			case protocol.SysAccessPoint:
+				fmt.Println("ACCESS!!")
+			case protocol.AppUser:
+			case protocol.AppMessage:
+			}
+			fmt.Println(obj)
+		}
+	}
 }
 
 func main() {

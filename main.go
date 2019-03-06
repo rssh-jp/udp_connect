@@ -21,51 +21,50 @@ func exec() {
 
 	var accessPoints sync.Map
 
-	wk.Read(func(src []byte, addr string, err error) {
-		if err != nil {
-			wk.Disconnect()
-			return
-		}
-		fmt.Println("-----------------------", addr)
-		_, obj, err := protocol.Deserialize(data.Deserialize(src, addr))
-		if err != nil {
-			wk.Disconnect()
-			return
-		}
-
-		switch res := obj.(type) {
-		case protocol.Connect:
-			fmt.Println("connect")
-			if _, ok := accessPoints.Load(res.Address); ok {
-				break
-			}
-			accessPoints.Store(res.Address, struct{}{})
-
-			fmt.Println(accessPoints)
-
-			accessPoints.Range(func(key, value interface{}) bool {
-				remote := key.(string)
-				if strings.Contains(res.Address, remote) {
-					return true
-				}
-				app.SendAccessPoint(res.Address, remote)
-				fmt.Println("#####################", res.Address, remote)
-				return false
-			})
-
-		case protocol.AccessPoint:
-			fmt.Println("ACCESS!!")
-		case protocol.User:
-		case protocol.Message:
-		}
-		app.SendMessage(":5555", "aaaaaaaa")
-	})
+	chRecv := wk.Read()
 
 	fmt.Println("Start")
 
-	ch := make(chan struct{}, 1)
+	for {
+		select {
+		case recv := <-chRecv:
+			if recv.Err != nil {
+				wk.Disconnect()
+				return
+			}
+			fmt.Println("-----------------------", recv.Addr)
+			_, obj, err := protocol.Deserialize(data.Deserialize(recv.Data, recv.Addr))
+			if err != nil {
+				wk.Disconnect()
+				return
+			}
 
-	<-ch
+			switch res := obj.(type) {
+			case protocol.Connect:
+				fmt.Println("connect", recv.Addr, res)
+				if _, ok := accessPoints.Load(recv.Addr); ok {
+					break
+				}
+				accessPoints.Store(recv.Addr, struct{}{})
+
+				accessPoints.Range(func(key, value interface{}) bool {
+					remote := key.(string)
+					if strings.Contains(recv.Addr, remote) {
+						return true
+					}
+					app.SendAccessPoint(recv.Addr, remote)
+					fmt.Println("#####################", recv.Addr, remote)
+					return false
+				})
+
+			case protocol.AccessPoint:
+				fmt.Println("ACCESS!!")
+			case protocol.User:
+			case protocol.Message:
+			}
+			app.SendMessage(":5555", "aaaaaaaa")
+		}
+	}
 }
 func main() {
 	exec()
