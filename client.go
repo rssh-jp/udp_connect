@@ -4,13 +4,13 @@ import (
 	"fmt"
 
 	"github.com/rssh-jp/udp_connect/app"
-	"github.com/rssh-jp/udp_connect/connection"
 	"github.com/rssh-jp/udp_connect/connection/data"
 	"github.com/rssh-jp/udp_connect/connection/protocol"
+	"github.com/rssh-jp/udp_connect/connection/udp"
 )
 
 func receiver(localAddr string, chLocalAddr chan string, chClose chan error) {
-	recv, err := connection.CreateReceiver(localAddr)
+	recv, err := udp.CreateReceiver(localAddr)
 	if err != nil {
 		fmt.Println(err)
 		return

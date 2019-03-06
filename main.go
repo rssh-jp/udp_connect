@@ -6,13 +6,13 @@ import (
 	"sync"
 
 	"github.com/rssh-jp/udp_connect/app"
-	"github.com/rssh-jp/udp_connect/connection"
 	"github.com/rssh-jp/udp_connect/connection/data"
 	"github.com/rssh-jp/udp_connect/connection/protocol"
+	"github.com/rssh-jp/udp_connect/connection/udp"
 )
 
 func exec() {
-	wk, err := connection.CreateReceiver(":5454")
+	wk, err := udp.CreateReceiver(":5454")
 	if err != nil {
 		fmt.Println(err)
 		return

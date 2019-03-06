@@ -1,4 +1,4 @@
-package connection
+package tcp
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ type recvObject struct {
 	Err  error
 }
 type Connect struct {
-	conn   *net.UDPConn
+	conn   *net.TCPConn
 	chRecv chan recvObject
 }
 

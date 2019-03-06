@@ -1,13 +1,13 @@
 package app
 
 import (
-	"github.com/rssh-jp/udp_connect/connection"
 	"github.com/rssh-jp/udp_connect/connection/data"
 	"github.com/rssh-jp/udp_connect/connection/protocol"
+	"github.com/rssh-jp/udp_connect/connection/udp"
 )
 
 func send(remoteAddr string, sendData []byte) (string, error) {
-	conn, err := connection.Create("", remoteAddr)
+	conn, err := udp.Create("", remoteAddr)
 	if err != nil {
 		return "", err
 	}
