@@ -1,110 +1,110 @@
 package tcp
 
 import (
-	"fmt"
+	"errors"
 	"net"
+	"sync"
 )
 
-type recvObject struct {
-	Data []byte
-	Addr string
-	Err  error
-}
-type Connect struct {
-	conn   *net.TCPConn
-	chRecv chan recvObject
+var (
+	ErrCouldNotFoundConnection = errors.New("Could not found connection.")
+)
+
+type Receiver struct {
+	conn     *net.TCPListener
+	chRecv   chan recvObject
+	chAccept chan acceptObject
+	sync.Mutex
+	clients []*net.TCPConn
 }
 
-func (c *Connect) Close() {
-	close(c.chRecv)
+func (c *Receiver) Close() {
 	if c.conn == nil {
 		return
 	}
+	c.Lock()
+	defer c.Unlock()
+
+	for _, client := range c.clients {
+		client.Close()
+	}
+
+	close(c.chAccept)
+	close(c.chRecv)
 	c.conn.Close()
 }
-func (c *Connect) Read() chan recvObject {
+func (c *Receiver) Accept() chan acceptObject {
 	go func() {
 		for {
-			buf := make([]byte, 255)
-			n, addr, err := c.conn.ReadFrom(buf)
+			conn, err := c.conn.AcceptTCP()
 			if err != nil {
-				c.chRecv <- recvObject{nil, "", err}
-				return
+				c.chAccept <- acceptObject{nil, err}
+				break
 			}
-			c.chRecv <- recvObject{buf[:n], addr.String(), nil}
+
+			go func(conn *net.TCPConn) {
+				c.Lock()
+				defer c.Unlock()
+
+				c.clients = append(c.clients, conn)
+
+				c.chAccept <- acceptObject{conn.LocalAddr(), nil}
+			}(conn)
+		}
+	}()
+	return c.chAccept
+}
+func (c *Receiver) FindClient(addr net.Addr) *net.TCPConn {
+	for _, client := range c.clients {
+		if client.LocalAddr().String() != addr.String() {
+			continue
+		}
+		return client
+	}
+	return nil
+}
+func (c *Receiver) Send(addr net.Addr, data []byte) (int, error) {
+	for _, client := range c.clients {
+		if addr != nil && client.LocalAddr().String() != addr.String() {
+			continue
+		}
+		return client.Write(data)
+	}
+	return 0, ErrCouldNotFoundConnection
+}
+
+func (c *Receiver) Read(addr net.Addr) chan recvObject {
+	conn := c.FindClient(addr)
+	go func() {
+		for {
+			buf := make([]byte, 256)
+			n, err := conn.Read(buf)
+			if err != nil {
+				c.chRecv <- recvObject{nil, conn.LocalAddr(), err}
+			}
+			c.chRecv <- recvObject{buf[:n], conn.LocalAddr(), nil}
 		}
 	}()
 	return c.chRecv
 }
-func (c *Connect) Disconnect() {
-	if c.conn == nil {
-		return
-	}
-	c.conn.Close()
-}
-func (c *Connect) Send(data []byte) error {
-	c.conn.Write(data)
-
-	return nil
-}
-func (c *Connect) LocalAddr() string {
-	return c.conn.LocalAddr().String()
-}
-
-func Create(localAddr, remoteAddr string) (*Connect, error) {
+func NewReceiver(addr string) (*Receiver, error) {
 	var err error
-	var laddr, raddr *net.UDPAddr
+	var laddr *net.TCPAddr
 
-	if localAddr != "" {
-		laddr, err = net.ResolveUDPAddr("udp", localAddr)
-		if err != nil {
-			fmt.Println(err)
-			return nil, err
-		}
-	}
-	if remoteAddr != "" {
-		raddr, err = net.ResolveUDPAddr("udp", remoteAddr)
-		if err != nil {
-			fmt.Println(err)
-			return nil, err
-		}
-	}
-
-	conn, err := net.DialUDP("udp", laddr, raddr)
+	laddr, err = net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
 
-	fmt.Println("===", conn.RemoteAddr())
-	fmt.Println("===", conn.LocalAddr())
-
-	ret := Connect{
-		conn:   conn,
-		chRecv: make(chan recvObject, 10),
-	}
-	fmt.Println(conn)
-
-	return &ret, nil
-}
-
-func CreateReceiver(localAddr string) (*Connect, error) {
-	laddr, err := net.ResolveUDPAddr("udp", localAddr)
+	conn, err := net.ListenTCP("tcp", laddr)
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
 
-	conn, err := net.ListenUDP("udp", laddr)
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
-
-	ret := Connect{
-		conn:   conn,
-		chRecv: make(chan recvObject, 10),
-	}
-
-	return &ret, nil
+	return &Receiver{
+		conn:     conn,
+		chRecv:   make(chan recvObject, 10),
+		chAccept: make(chan acceptObject, 10),
+		clients:  make([]*net.TCPConn, 0, 8),
+	}, nil
 }

@@ -70,7 +70,12 @@ func Create(localAddr, remoteAddr string) (*Connect, error) {
 		}
 	}
 
-	conn, err := net.DialUDP("udp", laddr, raddr)
+	var conn *net.UDPConn
+	if raddr == nil {
+		conn, err = net.ListenUDP("udp", laddr)
+	} else {
+		conn, err = net.DialUDP("udp", laddr, raddr)
+	}
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -84,27 +89,6 @@ func Create(localAddr, remoteAddr string) (*Connect, error) {
 		chRecv: make(chan recvObject, 10),
 	}
 	fmt.Println(conn)
-
-	return &ret, nil
-}
-
-func CreateReceiver(localAddr string) (*Connect, error) {
-	laddr, err := net.ResolveUDPAddr("udp", localAddr)
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
-
-	conn, err := net.ListenUDP("udp", laddr)
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
-
-	ret := Connect{
-		conn:   conn,
-		chRecv: make(chan recvObject, 10),
-	}
 
 	return &ret, nil
 }

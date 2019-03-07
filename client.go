@@ -2,59 +2,37 @@ package main
 
 import (
 	"fmt"
+	"log"
 
-	"github.com/rssh-jp/udp_connect/app"
-	"github.com/rssh-jp/udp_connect/connection/data"
-	"github.com/rssh-jp/udp_connect/connection/protocol"
-	"github.com/rssh-jp/udp_connect/connection/udp"
+	"github.com/rssh-jp/udp_connect/app/udp"
+	"github.com/rssh-jp/udp_connect/connection/tcp"
 )
 
-func receiver(localAddr string, chLocalAddr chan string, chClose chan error) {
-	recv, err := udp.CreateReceiver(localAddr)
+func main() {
+	localAddr, err := udp.SendConnect(":5454")
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Fatal(err)
 	}
-	defer recv.Disconnect()
 
-	chLocalAddr <- recv.LocalAddr()
+	fmt.Println(localAddr)
 
-	chRecv := recv.Read()
+	conn, err := tcp.NewReceiver(localAddr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	chAccept := conn.Accept()
 
 	for {
 		select {
-		case res := <-chRecv:
-			if res.Err != nil {
-				recv.Disconnect()
-				return
+		case accept := <-chAccept:
+			chRecv := conn.Read(accept.Addr)
+			for {
+				select {
+				case res := <-chRecv:
+					fmt.Println("res : ", res)
+				}
 			}
-			typ, obj, err := protocol.Deserialize(data.Deserialize(res.Data, res.Addr))
-			if err != nil {
-				recv.Disconnect()
-				return
-			}
-
-			switch typ {
-			case protocol.SysConnect:
-				fmt.Println("connect")
-			case protocol.SysAccessPoint:
-				fmt.Println("ACCESS!!")
-			case protocol.AppUser:
-			case protocol.AppMessage:
-			}
-			fmt.Println(obj)
 		}
 	}
-}
-
-func main() {
-	chLocalAddr := make(chan string, 1)
-	chClose := make(chan error, 1)
-
-	go receiver("", chLocalAddr, chClose)
-
-	app.SendConnect(":5454")
-
-	ch := make(chan struct{}, 1)
-	<-ch
 }

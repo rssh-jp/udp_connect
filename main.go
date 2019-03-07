@@ -5,14 +5,14 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/rssh-jp/udp_connect/app"
 	"github.com/rssh-jp/udp_connect/connection/data"
 	"github.com/rssh-jp/udp_connect/connection/protocol"
+	"github.com/rssh-jp/udp_connect/connection/tcp"
 	"github.com/rssh-jp/udp_connect/connection/udp"
 )
 
 func exec() {
-	wk, err := udp.CreateReceiver(":5454")
+	wk, err := udp.Create(":5454", "")
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -47,22 +47,27 @@ func exec() {
 				}
 				accessPoints.Store(recv.Addr, struct{}{})
 
+				var addr string
 				accessPoints.Range(func(key, value interface{}) bool {
 					remote := key.(string)
 					if strings.Contains(recv.Addr, remote) {
 						return true
 					}
-					app.SendAccessPoint(recv.Addr, remote)
-					fmt.Println("#####################", recv.Addr, remote)
+					addr = remote
 					return false
 				})
+				conn, err := tcp.NewClient("", recv.Addr)
+				if err != nil {
+					break
+				}
+				fmt.Println("addr : ", addr)
+				conn.Send([]byte("aaaaaaa"))
 
 			case protocol.AccessPoint:
 				fmt.Println("ACCESS!!")
 			case protocol.User:
 			case protocol.Message:
 			}
-			app.SendMessage(":5555", "aaaaaaaa")
 		}
 	}
 }
